@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\EQFR.Common\EQFR.Common.csproj" />
+    <ProjectReference Include="..\EQFR.EIFData\EQFR.EIFData.csproj" />
+    <ProjectReference Include="..\EQFR.IO\EQFR.IO.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

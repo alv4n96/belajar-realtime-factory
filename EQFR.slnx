@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EQFR.Biz/EQFR.Biz.csproj" />
+    <Project Path="src/EQFR.Common/EQFR.Common.csproj" />
+    <Project Path="src/EQFR.EIFData/EQFR.EIFData.csproj" />
+    <Project Path="src/EQFR.IO/EQFR.IO.csproj" />
+    <Project Path="src/EQFR.UI/EQFR.UI.csproj" />
+  </Folder>
+</Solution>
