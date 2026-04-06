@@ -18,6 +18,7 @@ public static class FactoryCanvasViewModel
 
     public sealed record Node(
         string Id,
+        string DisplayName,
         string Type,
         double X,
         double Y
@@ -60,7 +61,7 @@ public static class FactoryCanvasViewModel
         var minY = snapshot.Locations.Min(l => l.Y);
         var maxY = snapshot.Locations.Max(l => l.Y);
 
-        var pad = 1.2; // world-units padding
+        var pad = 1.2;
         minX -= pad;
         maxX += pad;
         minY -= pad;
@@ -68,7 +69,7 @@ public static class FactoryCanvasViewModel
 
         var nodes = snapshot.Locations
             .OrderBy(l => l.Id, StringComparer.OrdinalIgnoreCase)
-            .Select(l => new Node(l.Id, l.Type, l.X, l.Y))
+            .Select(l => new Node(l.Id, string.IsNullOrWhiteSpace(l.DisplayName) ? l.Id : l.DisplayName, l.Type, l.X, l.Y))
             .ToList();
 
         var edges = snapshot.RouteEdges
@@ -111,7 +112,6 @@ public static class FactoryCanvasViewModel
                     return null;
                 }
 
-                // Stable small offset so multiple transports don't overlap perfectly.
                 var (dx, dy) = OffsetFor(t.Id);
                 return new TransportMarker(t.Id, t.Status, loc.X + dx, loc.Y + dy);
             })
@@ -135,11 +135,9 @@ public static class FactoryCanvasViewModel
                 hash = (hash * 31) + ch;
             }
 
-            // Range: [-0.18, 0.18]
             var dx = (((hash >> 0) & 0xFF) / 255.0 - 0.5) * 0.36;
             var dy = (((hash >> 8) & 0xFF) / 255.0 - 0.5) * 0.36;
             return (dx, dy);
         }
     }
 }
-

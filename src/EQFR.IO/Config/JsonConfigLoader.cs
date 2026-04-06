@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using EQFR.Common;
 using EQFR.EIFData.Layout;
 using EQFR.EIFData.Process;
@@ -12,7 +13,8 @@ public sealed class JsonConfigLoader : IConfigLoader
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     public Result<ConfigBundle> LoadFromDirectory(string configDirectory)

@@ -1,9 +1,16 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
-@Body
+<div class="appShell">
+    <nav class="appNav glass">
+        <a href="/dashboard" class="appNav__link">Dashboard</a>
+        <a href="/layout-builder" class="appNav__link">Layout Builder</a>
+    </nav>
+
+    @Body
+</div>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    <span class="dismiss">??</span>
 </div>

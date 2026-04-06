@@ -1,0 +1,144 @@
+@using EQFR.UI.Services
+@inject FactoryConfigService ConfigService
+
+<section class="panel panel--config glass floatingCard @(Minimized ? "floatingCard--min" : string.Empty)">
+    <div class="panel__head">
+        <h2>Config Editor</h2>
+        <div class="panel__headActions">
+            <div class="panel__meta">@StatusText</div>
+            <button type="button" class="floatingCard__toggle" @onclick="OnToggleMinimized">@(Minimized ? "+" : "-")</button>
+        </div>
+    </div>
+
+    @if (!Minimized)
+    {
+        <div class="panel__body configEditor">
+            <div class="configEditor__toolbar">
+                <label class="configEditor__field">
+                    <span>Section</span>
+                    <select @bind="SelectedSection" class="configEditor__select">
+                        @foreach (var item in Sections)
+                        {
+                            <option value="@item.Key">@item.Value</option>
+                        }
+                    </select>
+                </label>
+
+                <button type="button" class="configEditor__button" @onclick="LoadAsync" disabled="@IsBusy">Reload</button>
+                <button type="button" class="configEditor__button configEditor__button--primary" @onclick="SaveAsync" disabled="@IsBusy">Save + Reset</button>
+            </div>
+
+            <div class="configEditor__meta">
+                <span>Config dir: @ConfigDir</span>
+            </div>
+
+            <textarea class="configEditor__textarea" @bind="EditorText" @bind:event="oninput" spellcheck="false"></textarea>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter] public bool Minimized { get; set; }
+    [Parameter] public EventCallback OnToggleMinimized { get; set; }
+
+    private static readonly IReadOnlyDictionary<string, string> Sections = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["layout"] = "Layout",
+        ["routes"] = "Rules / Routes",
+        ["transport"] = "Transport",
+        ["process"] = "Process",
+        ["simulation"] = "Simulation"
+    };
+
+    private Dictionary<string, string> _sectionText = new(StringComparer.OrdinalIgnoreCase);
+    private string _selectedSection = "layout";
+    private string _editorText = "{}";
+
+    private bool IsBusy { get; set; }
+    private string StatusText { get; set; } = "Not loaded";
+    private string ConfigDir { get; set; } = "-";
+
+    private string SelectedSection
+    {
+        get => _selectedSection;
+        set
+        {
+            _selectedSection = value;
+            if (_sectionText.TryGetValue(value, out var text))
+            {
+                _editorText = text;
+            }
+        }
+    }
+
+    private string EditorText
+    {
+        get => _editorText;
+        set
+        {
+            _editorText = value;
+            _sectionText[_selectedSection] = value;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCoreAsync(ignoreBusy: false);
+    }
+
+    private Task LoadAsync() => LoadCoreAsync(ignoreBusy: false);
+
+    private async Task LoadCoreAsync(bool ignoreBusy)
+    {
+        if (IsBusy && !ignoreBusy) return;
+
+        IsBusy = true;
+        StatusText = "Loading...";
+        try
+        {
+            var bundle = await ConfigService.GetAsync();
+            _sectionText = bundle.Sections.ToDictionary(kvp => kvp.Key, kvp => kvp.Value ?? "{}", StringComparer.OrdinalIgnoreCase);
+            ConfigDir = string.IsNullOrWhiteSpace(bundle.ConfigDir) ? "-" : bundle.ConfigDir;
+
+            if (!_sectionText.TryGetValue(_selectedSection, out var currentText))
+            {
+                _selectedSection = Sections.Keys.First();
+                currentText = _sectionText.GetValueOrDefault(_selectedSection, "{}");
+            }
+
+            _editorText = currentText ?? "{}";
+            StatusText = "Loaded";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Load failed: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (IsBusy) return;
+
+        IsBusy = true;
+        StatusText = "Saving...";
+        try
+        {
+            await ConfigService.SaveSectionAsync(_selectedSection, _editorText);
+            IsBusy = false;
+            await LoadCoreAsync(ignoreBusy: true);
+            StatusText = "Saved. Runtime reset requested.";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Save failed: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+}

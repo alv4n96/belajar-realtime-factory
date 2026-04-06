@@ -5,7 +5,7 @@ namespace EQFR.UI.Services;
 public sealed class SimulationControlService
 {
     private readonly object _gate = new();
-    private SimulationStatus _desiredStatus = SimulationStatus.Stopped;
+    private SimulationStatus _desiredStatus = SimulationStatus.Running;
     private bool _resetRequested;
 
     public SimulationStatus DesiredStatus
@@ -62,4 +62,3 @@ public sealed class SimulationControlService
         }
     }
 }
-
