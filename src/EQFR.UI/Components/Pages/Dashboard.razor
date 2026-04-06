@@ -22,9 +22,9 @@
             </div>
         </div>
         <div class="dash__controls">
-            <button class="btn" disabled>Start</button>
-            <button class="btn" disabled>Pause</button>
-            <button class="btn" disabled>Reset</button>
+            <button class="btn @(Vm.CanStart ? "" : "btn--disabled")" disabled="@(!Vm.CanStart)" @onclick="Vm.StartAsync">Start</button>
+            <button class="btn @(Vm.CanPause ? "" : "btn--disabled")" disabled="@(!Vm.CanPause)" @onclick="Vm.PauseAsync">Pause</button>
+            <button class="btn @(Vm.CanReset ? "" : "btn--disabled")" disabled="@(!Vm.CanReset)" @onclick="Vm.ResetAsync">Reset</button>
         </div>
     </header>
 

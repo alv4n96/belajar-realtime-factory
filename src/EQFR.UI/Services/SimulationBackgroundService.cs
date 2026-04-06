@@ -14,7 +14,8 @@ namespace EQFR.UI.Services;
 public sealed class SimulationBackgroundService(
     ILogger<SimulationBackgroundService> logger,
     IHubContext<FactoryHub> hubContext,
-    FactorySnapshotStore snapshotStore) : BackgroundService
+    FactorySnapshotStore snapshotStore,
+    SimulationControlService controls) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -35,21 +36,28 @@ public sealed class SimulationBackgroundService(
             return;
         }
 
-        var state = FactoryStateBuilder.BuildInitialState(bundleResult.Value);
-
-        var reservations = new ReservationManager();
-        var transportEngine = new TransportEngine(reservations);
-        var machineEngine = new RollPressMachineEngine(bundleResult.Value.Process);
-        var dispatcher = new Dispatcher();
-        var orchestrator = new SimulationOrchestrator(machineEngine, dispatcher, transportEngine);
-
-        state = state with { SimulationStatus = EQFR.Common.SimulationStatus.Running };
+        var bundle = bundleResult.Value;
+        var (state, orchestrator, reservations) = BuildRuntime(bundle);
 
         while (!stoppingToken.IsCancellationRequested)
         {
             var now = DateTimeOffset.UtcNow;
 
-            orchestrator.Tick(state, now);
+            if (controls.ConsumeResetRequested())
+            {
+                (state, orchestrator, reservations) = BuildRuntime(bundle);
+            }
+
+            var desired = controls.DesiredStatus;
+            if (state.SimulationStatus != desired)
+            {
+                state = state with { SimulationStatus = desired };
+            }
+
+            if (state.SimulationStatus == EQFR.Common.SimulationStatus.Running)
+            {
+                orchestrator.Tick(state, now);
+            }
 
             var snapshot = SnapshotBuilder.Build(state, now);
             snapshotStore.Update(snapshot);
@@ -57,7 +65,11 @@ public sealed class SimulationBackgroundService(
 
             try
             {
-                await Task.Delay(state.TickOptions.TickInterval, stoppingToken);
+                var delay = state.SimulationStatus == EQFR.Common.SimulationStatus.Running
+                    ? state.TickOptions.TickInterval
+                    : TimeSpan.FromMilliseconds(Math.Max(250, state.TickOptions.TickInterval.TotalMilliseconds));
+
+                await Task.Delay(delay, stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -84,6 +96,20 @@ public sealed class SimulationBackgroundService(
         }
 
         return null;
+    }
+
+    private static (FactoryState State, SimulationOrchestrator Orchestrator, ReservationManager Reservations) BuildRuntime(ConfigBundle bundle)
+    {
+        var state = FactoryStateBuilder.BuildInitialState(bundle);
+
+        var reservations = new ReservationManager();
+        var transportEngine = new TransportEngine(reservations);
+        var machineEngine = new RollPressMachineEngine(bundle.Process);
+        var dispatcher = new Dispatcher();
+        var orchestrator = new SimulationOrchestrator(machineEngine, dispatcher, transportEngine);
+
+        state = state with { SimulationStatus = EQFR.Common.SimulationStatus.Stopped };
+        return (state, orchestrator, reservations);
     }
 }
 

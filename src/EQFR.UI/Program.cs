@@ -10,6 +10,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<FactorySnapshotStore>();
+builder.Services.AddSingleton<SimulationControlService>();
 builder.Services.AddScoped<DashboardViewModel>();
 builder.Services.AddHostedService<SimulationBackgroundService>();
 
