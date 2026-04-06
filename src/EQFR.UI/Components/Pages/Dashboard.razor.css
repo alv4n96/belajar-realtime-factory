@@ -138,27 +138,6 @@
   font-size: 13px;
 }
 
-.events__list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.events__item {
-  display: grid;
-  grid-template-columns: 70px 1fr;
-  gap: 10px;
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.events__time {
-  color: #7a8796;
-  font-variant-numeric: tabular-nums;
-}
-
 .legend {
   display: grid;
   gap: 10px;

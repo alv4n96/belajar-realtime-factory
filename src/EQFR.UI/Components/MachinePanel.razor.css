@@ -1,0 +1,27 @@
+.mp__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.mp__table th {
+  text-align: left;
+  font-size: 11px;
+  color: #7a8796;
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
+  padding: 10px 0 8px;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.mp__table td {
+  padding: 10px 0;
+  border-bottom: 1px dashed #eef2f6;
+  vertical-align: top;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+

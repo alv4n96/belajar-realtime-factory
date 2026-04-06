@@ -1,0 +1,25 @@
+.elp__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.elp__item {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.elp__time {
+  color: #7a8796;
+  font-variant-numeric: tabular-nums;
+}
+
+.elp__msg {
+  color: #26303b;
+}
+

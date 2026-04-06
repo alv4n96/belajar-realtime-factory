@@ -1,0 +1,39 @@
+@using EQFR.UI.ViewModels
+
+<div class="tp">
+    @if (Items.Count == 0)
+    {
+        <div class="muted">Belum ada transport.</div>
+    }
+    else
+    {
+        <table class="tp__table">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Status</th>
+                    <th>Node</th>
+                    <th>Task</th>
+                    <th>Lot</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Items)
+                {
+                    <tr>
+                        <td class="mono">@t.Id</td>
+                        <td>@t.Status</td>
+                        <td class="mono">@($"{t.LocationId}:{t.PortId}")</td>
+                        <td class="mono">@((string.IsNullOrWhiteSpace(t.CurrentTaskId) ? "-" : t.CurrentTaskId))</td>
+                        <td class="mono">@((string.IsNullOrWhiteSpace(t.CurrentLotId) ? "-" : t.CurrentLotId))</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<TransportPanelViewModel.Item> Items { get; set; } = Array.Empty<TransportPanelViewModel.Item>();
+}
+
