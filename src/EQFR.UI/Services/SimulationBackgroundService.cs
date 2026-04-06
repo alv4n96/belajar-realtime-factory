@@ -13,7 +13,8 @@ namespace EQFR.UI.Services;
 
 public sealed class SimulationBackgroundService(
     ILogger<SimulationBackgroundService> logger,
-    IHubContext<FactoryHub> hubContext) : BackgroundService
+    IHubContext<FactoryHub> hubContext,
+    FactorySnapshotStore snapshotStore) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -51,6 +52,7 @@ public sealed class SimulationBackgroundService(
             orchestrator.Tick(state, now);
 
             var snapshot = SnapshotBuilder.Build(state, now);
+            snapshotStore.Update(snapshot);
             await hubContext.Clients.All.SendAsync("factorySnapshot", snapshot, cancellationToken: stoppingToken);
 
             try

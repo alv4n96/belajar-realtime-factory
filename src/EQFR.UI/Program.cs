@@ -1,6 +1,7 @@
 using EQFR.UI.Components;
 using EQFR.UI.Realtime;
 using EQFR.UI.Services;
+using EQFR.UI.ViewModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<FactorySnapshotStore>();
+builder.Services.AddScoped<DashboardViewModel>();
 builder.Services.AddHostedService<SimulationBackgroundService>();
 
 var app = builder.Build();

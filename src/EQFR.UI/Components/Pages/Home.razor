@@ -1,7 +1,11 @@
-﻿@page "/"
+@page "/"
+@inject NavigationManager Nav
 
 <PageTitle>EQFR</PageTitle>
 
-<h1>EQFR</h1>
-
-Real-time factory simulation and monitoring (bootstrap).
+@code {
+    protected override void OnInitialized()
+    {
+        Nav.NavigateTo("/dashboard", forceLoad: false);
+    }
+}
