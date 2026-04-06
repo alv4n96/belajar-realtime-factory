@@ -1,0 +1,53 @@
+{
+  "locations": [
+    {
+      "id": "WH_IN",
+      "displayName": "Input Warehouse",
+      "type": "Warehouse",
+      "position": { "x": 0, "y": 0 },
+      "ports": [
+        { "id": "OUT", "type": "Output" }
+      ]
+    },
+    {
+      "id": "CS_1",
+      "displayName": "Charging Station 1",
+      "type": "ChargingStation",
+      "position": { "x": 2, "y": 1 },
+      "ports": [
+        { "id": "IN", "type": "Input" },
+        { "id": "OUT", "type": "Output" }
+      ]
+    },
+    {
+      "id": "ROLL_PRESS_1",
+      "displayName": "Roll Press 1",
+      "type": "Machine",
+      "position": { "x": 4, "y": 0 },
+      "ports": [
+        { "id": "IN", "type": "Input" },
+        { "id": "OUT", "type": "Output" }
+      ]
+    },
+    {
+      "id": "CS_2",
+      "displayName": "Charging Station 2",
+      "type": "ChargingStation",
+      "position": { "x": 6, "y": 1 },
+      "ports": [
+        { "id": "IN", "type": "Input" },
+        { "id": "OUT", "type": "Output" }
+      ]
+    },
+    {
+      "id": "WH_OUT",
+      "displayName": "Output Warehouse",
+      "type": "Warehouse",
+      "position": { "x": 8, "y": 0 },
+      "ports": [
+        { "id": "IN", "type": "Input" }
+      ]
+    }
+  ]
+}
+

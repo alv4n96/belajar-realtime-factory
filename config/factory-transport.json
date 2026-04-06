@@ -1,0 +1,13 @@
+{
+  "transports": [
+    {
+      "id": "TR_01",
+      "start": { "locationId": "CS_1", "portId": "IN" }
+    },
+    {
+      "id": "TR_02",
+      "start": { "locationId": "CS_2", "portId": "IN" }
+    }
+  ]
+}
+
