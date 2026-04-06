@@ -42,53 +42,30 @@
         <section class="panel">
             <div class="panel__head">
                 <h2>Machine</h2>
-                <div class="panel__meta">Placeholder</div>
+                <div class="panel__meta">@((Vm.Snapshot?.Machines.Count ?? 0).ToString())</div>
             </div>
             <div class="panel__body">
-                <div class="kpi">
-                    <div class="kpi__label">Count</div>
-                    <div class="kpi__value">@((Vm.Snapshot?.Machines.Count ?? 0).ToString())</div>
-                </div>
-                <div class="muted">Detail machine panel akan ditambahkan nanti.</div>
+                <MachinePanel Items="@(MachinePanelViewModel.Build(Vm.Snapshot))" />
             </div>
         </section>
 
         <section class="panel">
             <div class="panel__head">
                 <h2>Transport</h2>
-                <div class="panel__meta">Placeholder</div>
+                <div class="panel__meta">@((Vm.Snapshot?.Transports.Count ?? 0).ToString())</div>
             </div>
             <div class="panel__body">
-                <div class="kpi">
-                    <div class="kpi__label">Count</div>
-                    <div class="kpi__value">@((Vm.Snapshot?.Transports.Count ?? 0).ToString())</div>
-                </div>
-                <div class="muted">Detail transport panel akan ditambahkan nanti.</div>
+                <TransportPanel Items="@(TransportPanelViewModel.Build(Vm.Snapshot))" />
             </div>
         </section>
 
         <section class="panel panel--events">
             <div class="panel__head">
                 <h2>Event Log</h2>
-                <div class="panel__meta">Placeholder</div>
+                <div class="panel__meta">@((Vm.Snapshot?.RecentEvents.Count ?? 0).ToString())</div>
             </div>
             <div class="panel__body events">
-                @if (Vm.Snapshot is null || Vm.Snapshot.RecentEvents.Count == 0)
-                {
-                    <div class="muted">Belum ada event.</div>
-                }
-                else
-                {
-                    <ul class="events__list">
-                        @foreach (var e in Vm.Snapshot.RecentEvents.Take(10))
-                        {
-                            <li class="events__item">
-                                <span class="events__time">@e.Timestamp.ToString("HH:mm:ss")</span>
-                                <span class="events__msg">@e.Message</span>
-                            </li>
-                        }
-                    </ul>
-                }
+                <EventLogPanel Items="@(EventLogPanelViewModel.Build(Vm.Snapshot, take: 30))" />
             </div>
         </section>
 

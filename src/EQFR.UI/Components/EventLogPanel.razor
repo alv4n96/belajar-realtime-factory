@@ -1,0 +1,25 @@
+@using EQFR.UI.ViewModels
+
+<div class="elp">
+    @if (Items.Count == 0)
+    {
+        <div class="muted">Belum ada event.</div>
+    }
+    else
+    {
+        <ul class="elp__list">
+            @foreach (var e in Items)
+            {
+                <li class="elp__item">
+                    <span class="elp__time">@e.Time</span>
+                    <span class="elp__msg">@e.Message</span>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<EventLogPanelViewModel.Item> Items { get; set; } = Array.Empty<EventLogPanelViewModel.Item>();
+}
+

@@ -1,0 +1,39 @@
+@using EQFR.UI.ViewModels
+
+<div class="mp">
+    @if (Items.Count == 0)
+    {
+        <div class="muted">Belum ada machine.</div>
+    }
+    else
+    {
+        <table class="mp__table">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Status</th>
+                    <th>Lot</th>
+                    <th>Step</th>
+                    <th>Flags</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in Items)
+                {
+                    <tr>
+                        <td class="mono">@m.Id</td>
+                        <td>@m.Status</td>
+                        <td class="mono">@((string.IsNullOrWhiteSpace(m.CurrentLotId) ? "-" : m.CurrentLotId))</td>
+                        <td class="mono">@m.StepText</td>
+                        <td class="mono">@m.FlagsText</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<MachinePanelViewModel.Item> Items { get; set; } = Array.Empty<MachinePanelViewModel.Item>();
+}
+
