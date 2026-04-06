@@ -183,7 +183,14 @@
 .dot--moving { background: #3b82f6; }
 .dot--waiting { background: #f59e0b; }
 .dot--processing { background: #22c55e; }
+.dot--ready { background: #0ea5e9; }
 .dot--error { background: #ef4444; }
+
+.legend__sep {
+  height: 1px;
+  background: #eef2f6;
+  margin: 2px 0;
+}
 
 @media (max-width: 980px) {
   .dash__header {

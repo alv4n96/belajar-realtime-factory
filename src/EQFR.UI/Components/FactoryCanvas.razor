@@ -1,0 +1,75 @@
+@using EQFR.UI.ViewModels
+
+@if (Scene is null)
+{
+    <div class="fc__empty">Menunggu snapshot realtime...</div>
+}
+else
+{
+    <svg class="fc" viewBox="@($"{Scene.MinX} {Scene.MinY} {Scene.Width} {Scene.Height}")" role="img" aria-label="Factory canvas">
+        <defs>
+            <filter id="fcShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="0.08" stdDeviation="0.12" flood-color="rgba(16,24,40,0.25)" />
+            </filter>
+        </defs>
+
+        @foreach (var e in Scene.Edges)
+        {
+            <line x1="@e.X1" y1="@e.Y1" x2="@e.X2" y2="@e.Y2" class="fc__edge @(e.IsOccupied ? "fc__edge--occ" : "")" />
+        }
+
+        @foreach (var n in Scene.Nodes)
+        {
+            <g class="fc__node" transform="@($"translate({n.X},{n.Y})")">
+                <circle r="0.45" class="fc__nodeDot @(NodeKindClass(n.Type))" filter="url(#fcShadow)" />
+                <text class="fc__nodeLabel" x="0.6" y="0.1">@n.Id</text>
+            </g>
+        }
+
+        @foreach (var m in Scene.Machines)
+        {
+            <circle cx="@m.X" cy="@m.Y" r="0.62" class="fc__machineRing @(MachineStatusClass(m.Status))" />
+        }
+
+        @foreach (var t in Scene.Transports)
+        {
+            <g class="fc__transport" transform="@($"translate({t.X},{t.Y})")">
+                <circle r="0.22" class="fc__transportDot @(TransportStatusClass(t.Status))" filter="url(#fcShadow)" />
+                <text class="fc__transportLabel" x="0.28" y="-0.28">@t.Id</text>
+            </g>
+        }
+    </svg>
+}
+
+@code {
+    [Parameter] public FactoryCanvasViewModel.Scene? Scene { get; set; }
+
+    private static string NodeKindClass(string type)
+    {
+        if (string.Equals(type, "Warehouse", StringComparison.OrdinalIgnoreCase)) return "fc__nodeDot--wh";
+        if (string.Equals(type, "ChargingStation", StringComparison.OrdinalIgnoreCase)) return "fc__nodeDot--cs";
+        if (string.Equals(type, "Machine", StringComparison.OrdinalIgnoreCase)) return "fc__nodeDot--mc";
+        return "fc__nodeDot--other";
+    }
+
+    private static string MachineStatusClass(EQFR.Common.MachineStatus status) => status switch
+    {
+        EQFR.Common.MachineStatus.WaitingForInput => "fc__machineRing--waiting",
+        EQFR.Common.MachineStatus.Processing => "fc__machineRing--processing",
+        EQFR.Common.MachineStatus.OutputReady => "fc__machineRing--ready",
+        EQFR.Common.MachineStatus.Error => "fc__machineRing--error",
+        _ => "fc__machineRing--idle"
+    };
+
+    private static string TransportStatusClass(EQFR.Common.TransportStatus status) => status switch
+    {
+        EQFR.Common.TransportStatus.Moving => "fc__transportDot--moving",
+        EQFR.Common.TransportStatus.Waiting => "fc__transportDot--waiting",
+        EQFR.Common.TransportStatus.Loading => "fc__transportDot--loading",
+        EQFR.Common.TransportStatus.Unloading => "fc__transportDot--unloading",
+        EQFR.Common.TransportStatus.Returning => "fc__transportDot--returning",
+        EQFR.Common.TransportStatus.Error => "fc__transportDot--error",
+        _ => "fc__transportDot--idle"
+    };
+}
+

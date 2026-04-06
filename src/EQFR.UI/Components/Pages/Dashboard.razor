@@ -1,5 +1,6 @@
 @page "/dashboard"
 @using EQFR.UI.ViewModels
+@using EQFR.UI.Components
 @inject DashboardViewModel Vm
 @implements IDisposable
 
@@ -31,12 +32,10 @@
         <section class="panel panel--canvas">
             <div class="panel__head">
                 <h2>Factory Canvas</h2>
-                <div class="panel__meta">Placeholder</div>
+                <div class="panel__meta">Realtime</div>
             </div>
             <div class="panel__body canvas">
-                <div class="canvas__hint">
-                    Canvas akan diisi di issue berikutnya (nodes, routes, transport, machine).
-                </div>
+                <FactoryCanvas Scene="@(FactoryCanvasViewModel.Build(Vm.Snapshot))" />
             </div>
         </section>
 
@@ -96,7 +95,7 @@
         <section class="panel panel--legend">
             <div class="panel__head">
                 <h2>Legend</h2>
-                <div class="panel__meta">Placeholder</div>
+                <div class="panel__meta">Status</div>
             </div>
             <div class="panel__body legend">
                 <div class="legend__item"><span class="dot dot--idle"></span> idle</div>
@@ -104,6 +103,8 @@
                 <div class="legend__item"><span class="dot dot--waiting"></span> waiting</div>
                 <div class="legend__item"><span class="dot dot--processing"></span> processing</div>
                 <div class="legend__item"><span class="dot dot--error"></span> error</div>
+                <div class="legend__sep"></div>
+                <div class="legend__item"><span class="dot dot--ready"></span> output ready</div>
             </div>
         </section>
     </main>
