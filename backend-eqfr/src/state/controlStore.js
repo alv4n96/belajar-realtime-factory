@@ -1,7 +1,7 @@
 const VALID_STATUSES = ["Stopped", "Running", "Paused"];
 
 function createControlStore() {
-  let desiredStatus = "Stopped";
+  let desiredStatus = "Running";
   let resetRequested = false;
   let lastChangedUtc = new Date().toISOString();
 
@@ -33,6 +33,7 @@ function createControlStore() {
 
   function reset() {
     resetRequested = true;
+    desiredStatus = "Running";
     lastChangedUtc = new Date().toISOString();
   }
 
@@ -47,4 +48,3 @@ function createControlStore() {
 }
 
 module.exports = { createControlStore };
-

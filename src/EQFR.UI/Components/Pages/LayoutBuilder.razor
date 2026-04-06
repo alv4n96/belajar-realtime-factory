@@ -1,0 +1,518 @@
+@page "/layout-builder"
+@rendermode InteractiveServer
+@using System.Globalization
+@using EQFR.UI.Services
+@inject FactoryConfigService ConfigService
+
+<PageTitle>Layout Builder</PageTitle>
+
+<div class="builder">
+    <section class="builder__preview glass">
+        <div class="builder__panelHead">
+            <div>
+                <div class="builder__eyebrow">UI Generator</div>
+                <h1>Layout Builder</h1>
+            </div>
+            <div class="builder__actions">
+                <button type="button" class="builder__button" @onclick="LoadAsync" disabled="@IsBusy">Reload</button>
+                <button type="button" class="builder__button" @onclick="ApplyFactoryFlowPreset">Apply Flow Preset</button>
+                <button type="button" class="builder__button builder__button--primary" @onclick="SaveAsync" disabled="@IsBusy">Save Layout + Routes</button>
+            </div>
+        </div>
+
+        <div class="builder__status">@StatusText</div>
+
+        <div class="builder__canvasWrap">
+            @if (Locations.Count == 0)
+            {
+                <div class="builder__empty">Belum ada node layout.</div>
+            }
+            else
+            {
+                <svg class="builder__canvas" viewBox="@BuildViewBox()" role="img" aria-label="Layout preview">
+                    @foreach (var edge in Routes)
+                    {
+                        var from = FindLocation(edge.From.LocationId);
+                        var to = FindLocation(edge.To.LocationId);
+                        if (from is null || to is null)
+                        {
+                            continue;
+                        }
+
+                        <line x1="@Svg(from.Position.X)" y1="@Svg(from.Position.Y)" x2="@Svg(to.Position.X)" y2="@Svg(to.Position.Y)" class="builder__edge" />
+                    }
+
+                    @foreach (var location in Locations)
+                    {
+                        <g transform="@Translate(location.Position.X, location.Position.Y)">
+                            <circle r="0.46" class="builder__node @NodeClass(location.Type)" />
+                            <text x="0.62" y="0.02" class="builder__label">@DisplayLabel(location)</text>
+                            <text x="0.62" y="0.36" class="builder__subLabel">@location.Id</text>
+                        </g>
+                    }
+                </svg>
+            }
+        </div>
+    </section>
+
+    <section class="builder__editor glass">
+        <div class="builder__columns">
+            <section class="builder__card">
+                <div class="builder__cardHead">
+                    <h2>Locations</h2>
+                    <button type="button" class="builder__button" @onclick="AddLocation">Add Location</button>
+                </div>
+
+                <div class="builder__list">
+                    @for (var i = 0; i < Locations.Count; i++)
+                    {
+                        var loc = Locations[i];
+                        <article class="builder__item">
+                            <div class="builder__itemHead">
+                                <strong>@DisplayLabel(loc)</strong>
+                                <button type="button" class="builder__iconButton" @onclick="(() => RemoveLocation(i))">x</button>
+                            </div>
+
+                            <div class="builder__grid">
+                                <label>
+                                    <span>Id</span>
+                                    <input @bind="loc.Id" @bind:event="oninput" />
+                                </label>
+                                <label>
+                                    <span>Display Name</span>
+                                    <input @bind="loc.DisplayName" @bind:event="oninput" />
+                                </label>
+                                <label>
+                                    <span>Type</span>
+                                    <select @bind="loc.Type">
+                                        <option value="Warehouse">Warehouse</option>
+                                        <option value="ChargingStation">ChargingStation</option>
+                                        <option value="Machine">Machine</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    <span>X</span>
+                                    <input type="number" step="0.1" @bind="loc.Position.X" @bind:event="oninput" />
+                                </label>
+                                <label>
+                                    <span>Y</span>
+                                    <input type="number" step="0.1" @bind="loc.Position.Y" @bind:event="oninput" />
+                                </label>
+                                <label>
+                                    <span>Ports</span>
+                                    <input value="@PortsSummary(loc)" @onchange="(e => UpdatePorts(loc, e.Value?.ToString()))" />
+                                </label>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+
+            <section class="builder__card">
+                <div class="builder__cardHead">
+                    <h2>Routes</h2>
+                    <button type="button" class="builder__button" @onclick="AddRoute">Add Route</button>
+                </div>
+
+                <div class="builder__list">
+                    @for (var i = 0; i < Routes.Count; i++)
+                    {
+                        var route = Routes[i];
+                        <article class="builder__item">
+                            <div class="builder__itemHead">
+                                <strong>@route.From.LocationId -> @route.To.LocationId</strong>
+                                <button type="button" class="builder__iconButton" @onclick="(() => RemoveRoute(i))">x</button>
+                            </div>
+
+                            <div class="builder__grid">
+                                <label>
+                                    <span>From Location</span>
+                                    <select @bind="route.From.LocationId">
+                                        @foreach (var loc in Locations)
+                                        {
+                                            <option value="@loc.Id">@DisplayLabel(loc)</option>
+                                        }
+                                    </select>
+                                </label>
+                                <label>
+                                    <span>From Port</span>
+                                    <input @bind="route.From.PortId" @bind:event="oninput" />
+                                </label>
+                                <label>
+                                    <span>To Location</span>
+                                    <select @bind="route.To.LocationId">
+                                        @foreach (var loc in Locations)
+                                        {
+                                            <option value="@loc.Id">@DisplayLabel(loc)</option>
+                                        }
+                                    </select>
+                                </label>
+                                <label>
+                                    <span>To Port</span>
+                                    <input @bind="route.To.PortId" @bind:event="oninput" />
+                                </label>
+                                <label>
+                                    <span>Distance</span>
+                                    <input type="number" step="0.1" @bind="route.Distance" @bind:event="oninput" />
+                                </label>
+                                <label class="builder__checkbox">
+                                    <span>Bidirectional</span>
+                                    <input type="checkbox" @bind="route.IsBidirectional" />
+                                </label>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+        </div>
+    </section>
+</div>
+
+@code {
+    private readonly List<LocationItem> Locations = [];
+    private readonly List<RouteItem> Routes = [];
+
+    private bool IsBusy { get; set; }
+    private string StatusText { get; set; } = "Loading...";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (IsBusy) return;
+        IsBusy = true;
+        StatusText = "Loading layout...";
+        try
+        {
+            var layout = await ConfigService.GetSectionAsync<LayoutConfig>("layout") ?? new LayoutConfig();
+            var routes = await ConfigService.GetSectionAsync<RoutesConfig>("routes") ?? new RoutesConfig();
+
+            Locations.Clear();
+            Locations.AddRange((layout.Locations ?? []).Select(item => new LocationItem
+            {
+                Id = item.Id ?? string.Empty,
+                DisplayName = item.DisplayName ?? string.Empty,
+                Type = item.Type ?? "Other",
+                Position = new PositionItem { X = item.Position?.X ?? 0, Y = item.Position?.Y ?? 0 },
+                Ports = (item.Ports ?? []).Select(port => new PortItem { Id = port.Id ?? string.Empty, Type = port.Type ?? "Output" }).ToList()
+            }));
+
+            Routes.Clear();
+            Routes.AddRange((routes.Edges ?? []).Select(item => new RouteItem
+            {
+                From = new NodeRefItem { LocationId = item.From?.LocationId ?? string.Empty, PortId = item.From?.PortId ?? "IN" },
+                To = new NodeRefItem { LocationId = item.To?.LocationId ?? string.Empty, PortId = item.To?.PortId ?? "IN" },
+                IsBidirectional = item.IsBidirectional,
+                Distance = item.Distance ?? 1
+            }));
+
+            StatusText = "Loaded";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Load failed: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (IsBusy) return;
+        IsBusy = true;
+        StatusText = "Saving...";
+        try
+        {
+            var layout = new LayoutConfig
+            {
+                Locations = Locations.Select(item => new LayoutLocation
+                {
+                    Id = item.Id,
+                    DisplayName = string.IsNullOrWhiteSpace(item.DisplayName) ? item.Id : item.DisplayName,
+                    Type = item.Type,
+                    Position = new LayoutPosition { X = item.Position.X, Y = item.Position.Y },
+                    Ports = item.Ports.Select(port => new LayoutPort { Id = port.Id, Type = port.Type }).ToList()
+                }).ToList()
+            };
+
+            var routes = new RoutesConfig
+            {
+                Edges = Routes.Select(item => new RouteEdgeConfig
+                {
+                    From = new RouteNodeRef { LocationId = item.From.LocationId, PortId = item.From.PortId },
+                    To = new RouteNodeRef { LocationId = item.To.LocationId, PortId = item.To.PortId },
+                    IsBidirectional = item.IsBidirectional,
+                    Distance = item.Distance
+                }).ToList()
+            };
+
+            await ConfigService.SaveSectionAsync("layout", layout);
+            await ConfigService.SaveSectionAsync("routes", routes);
+            StatusText = "Saved layout and routes.";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Save failed: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private void ApplyFactoryFlowPreset()
+    {
+        Locations.Clear();
+        Locations.AddRange([
+            new LocationItem
+            {
+                Id = "WH_IN",
+                DisplayName = "Input Warehouse",
+                Type = "Warehouse",
+                Position = new PositionItem { X = 0, Y = 0 },
+                Ports = [new PortItem { Id = "OUT", Type = "Output" }]
+            },
+            new LocationItem
+            {
+                Id = "CS_1",
+                DisplayName = "Charging Station 1",
+                Type = "ChargingStation",
+                Position = new PositionItem { X = 2, Y = 1 },
+                Ports = [new PortItem { Id = "IN", Type = "Input" }, new PortItem { Id = "OUT", Type = "Output" }]
+            },
+            new LocationItem
+            {
+                Id = "ROLL_PRESS_1",
+                DisplayName = "Roll Press 1",
+                Type = "Machine",
+                Position = new PositionItem { X = 4, Y = 0 },
+                Ports = [new PortItem { Id = "IN", Type = "Input" }, new PortItem { Id = "OUT", Type = "Output" }]
+            },
+            new LocationItem
+            {
+                Id = "CS_2",
+                DisplayName = "Charging Station 2",
+                Type = "ChargingStation",
+                Position = new PositionItem { X = 6, Y = 1 },
+                Ports = [new PortItem { Id = "IN", Type = "Input" }, new PortItem { Id = "OUT", Type = "Output" }]
+            },
+            new LocationItem
+            {
+                Id = "WH_OUT",
+                DisplayName = "Output Warehouse",
+                Type = "Warehouse",
+                Position = new PositionItem { X = 8, Y = 0 },
+                Ports = [new PortItem { Id = "IN", Type = "Input" }]
+            }
+        ]);
+
+        Routes.Clear();
+        Routes.AddRange([
+            new RouteItem
+            {
+                From = new NodeRefItem { LocationId = "CS_1", PortId = "IN" },
+                To = new NodeRefItem { LocationId = "WH_IN", PortId = "OUT" },
+                IsBidirectional = true,
+                Distance = 2
+            },
+            new RouteItem
+            {
+                From = new NodeRefItem { LocationId = "CS_1", PortId = "IN" },
+                To = new NodeRefItem { LocationId = "ROLL_PRESS_1", PortId = "IN" },
+                IsBidirectional = true,
+                Distance = 2
+            },
+            new RouteItem
+            {
+                From = new NodeRefItem { LocationId = "ROLL_PRESS_1", PortId = "OUT" },
+                To = new NodeRefItem { LocationId = "CS_2", PortId = "IN" },
+                IsBidirectional = true,
+                Distance = 2
+            },
+            new RouteItem
+            {
+                From = new NodeRefItem { LocationId = "CS_2", PortId = "IN" },
+                To = new NodeRefItem { LocationId = "WH_OUT", PortId = "IN" },
+                IsBidirectional = true,
+                Distance = 2
+            }
+        ]);
+
+        StatusText = "Preset applied: CS_1 handles WH_IN <-> ROLL_PRESS_1 and CS_2 handles ROLL_PRESS_1 <-> WH_OUT.";
+    }
+
+    private void AddLocation()
+    {
+        var next = Locations.Count + 1;
+        Locations.Add(new LocationItem
+        {
+            Id = $"LOC_{next:00}",
+            DisplayName = $"Location {next}",
+            Type = "Other",
+            Position = new PositionItem { X = next, Y = 0 },
+            Ports = [new PortItem { Id = "IN", Type = "Input" }]
+        });
+    }
+
+    private void RemoveLocation(int index)
+    {
+        if (index < 0 || index >= Locations.Count) return;
+        var id = Locations[index].Id;
+        Locations.RemoveAt(index);
+        Routes.RemoveAll(route => string.Equals(route.From.LocationId, id, StringComparison.OrdinalIgnoreCase) || string.Equals(route.To.LocationId, id, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void AddRoute()
+    {
+        var first = Locations.FirstOrDefault()?.Id ?? string.Empty;
+        var second = Locations.Skip(1).FirstOrDefault()?.Id ?? first;
+        Routes.Add(new RouteItem
+        {
+            From = new NodeRefItem { LocationId = first, PortId = "IN" },
+            To = new NodeRefItem { LocationId = second, PortId = "IN" },
+            IsBidirectional = true,
+            Distance = 1
+        });
+    }
+
+    private void RemoveRoute(int index)
+    {
+        if (index < 0 || index >= Routes.Count) return;
+        Routes.RemoveAt(index);
+    }
+
+    private LocationItem? FindLocation(string id) => Locations.FirstOrDefault(item => string.Equals(item.Id, id, StringComparison.OrdinalIgnoreCase));
+
+    private string DisplayLabel(LocationItem item) => string.IsNullOrWhiteSpace(item.DisplayName) ? item.Id : item.DisplayName;
+
+    private string PortsSummary(LocationItem item) => string.Join(", ", item.Ports.Select(port => $"{port.Id}:{port.Type}"));
+
+    private void UpdatePorts(LocationItem item, string? value)
+    {
+        item.Ports = string.IsNullOrWhiteSpace(value)
+            ? []
+            : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(portText =>
+                {
+                    var parts = portText.Split(':', StringSplitOptions.TrimEntries);
+                    return new PortItem
+                    {
+                        Id = parts.ElementAtOrDefault(0) ?? "IN",
+                        Type = parts.ElementAtOrDefault(1) ?? "Input"
+                    };
+                })
+                .ToList();
+    }
+
+    private string BuildViewBox()
+    {
+        if (Locations.Count == 0)
+        {
+            return "0 0 10 6";
+        }
+
+        var minX = Locations.Min(item => item.Position.X) - 1.2;
+        var maxX = Locations.Max(item => item.Position.X) + 1.6;
+        var minY = Locations.Min(item => item.Position.Y) - 1.2;
+        var maxY = Locations.Max(item => item.Position.Y) + 1.2;
+        return string.Create(CultureInfo.InvariantCulture, $"{minX} {minY} {Math.Max(1, maxX - minX)} {Math.Max(1, maxY - minY)}");
+    }
+
+    private static string Svg(double value) => value.ToString(CultureInfo.InvariantCulture);
+
+    private static string Translate(double x, double y) => string.Create(CultureInfo.InvariantCulture, $"translate({x},{y})");
+
+    private static string NodeClass(string type) => type switch
+    {
+        "Warehouse" => "builder__node--wh",
+        "ChargingStation" => "builder__node--cs",
+        "Machine" => "builder__node--mc",
+        _ => "builder__node--other"
+    };
+
+    private sealed class LayoutConfig
+    {
+        public List<LayoutLocation> Locations { get; set; } = [];
+    }
+
+    private sealed class LayoutLocation
+    {
+        public string? Id { get; set; }
+        public string? DisplayName { get; set; }
+        public string? Type { get; set; }
+        public LayoutPosition? Position { get; set; }
+        public List<LayoutPort>? Ports { get; set; }
+    }
+
+    private sealed class LayoutPosition
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+    }
+
+    private sealed class LayoutPort
+    {
+        public string? Id { get; set; }
+        public string? Type { get; set; }
+    }
+
+    private sealed class RoutesConfig
+    {
+        public List<RouteEdgeConfig> Edges { get; set; } = [];
+    }
+
+    private sealed class RouteEdgeConfig
+    {
+        public RouteNodeRef? From { get; set; }
+        public RouteNodeRef? To { get; set; }
+        public bool IsBidirectional { get; set; }
+        public double? Distance { get; set; }
+    }
+
+    private sealed class RouteNodeRef
+    {
+        public string? LocationId { get; set; }
+        public string? PortId { get; set; }
+    }
+
+    private sealed class LocationItem
+    {
+        public string Id { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string Type { get; set; } = "Other";
+        public PositionItem Position { get; set; } = new();
+        public List<PortItem> Ports { get; set; } = [];
+    }
+
+    private sealed class PositionItem
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+    }
+
+    private sealed class PortItem
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Type { get; set; } = "Input";
+    }
+
+    private sealed class RouteItem
+    {
+        public NodeRefItem From { get; set; } = new();
+        public NodeRefItem To { get; set; } = new();
+        public bool IsBidirectional { get; set; }
+        public double Distance { get; set; } = 1;
+    }
+
+    private sealed class NodeRefItem
+    {
+        public string LocationId { get; set; } = string.Empty;
+        public string PortId { get; set; } = "IN";
+    }
+}

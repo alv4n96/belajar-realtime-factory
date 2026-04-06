@@ -1,3 +1,4 @@
+@using System.Globalization
 @using EQFR.UI.ViewModels
 
 @if (Scene is null)
@@ -6,43 +7,62 @@
 }
 else
 {
-    <svg class="fc" viewBox="@($"{Scene.MinX} {Scene.MinY} {Scene.Width} {Scene.Height}")" role="img" aria-label="Factory canvas">
-        <defs>
-            <filter id="fcShadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="0.08" stdDeviation="0.12" flood-color="rgba(16,24,40,0.25)" />
-            </filter>
-        </defs>
+    <div class="fc__viewport" style="@ViewportStyle">
+        <svg class="fc" viewBox="@ViewBox(Scene)" role="img" aria-label="Factory canvas">
+            <defs>
+                <filter id="fcShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="0.08" stdDeviation="0.12" flood-color="rgba(16,24,40,0.25)" />
+                </filter>
+            </defs>
 
-        @foreach (var e in Scene.Edges)
-        {
-            <line x1="@e.X1" y1="@e.Y1" x2="@e.X2" y2="@e.Y2" class="fc__edge @(e.IsOccupied ? "fc__edge--occ" : "")" />
-        }
+            @foreach (var e in Scene.Edges)
+            {
+                <line x1="@Svg(e.X1)" y1="@Svg(e.Y1)" x2="@Svg(e.X2)" y2="@Svg(e.Y2)" class="fc__edge @(e.IsOccupied ? "fc__edge--occ" : "")" />
+            }
 
-        @foreach (var n in Scene.Nodes)
-        {
-            <g class="fc__node" transform="@($"translate({n.X},{n.Y})")">
-                <circle r="0.45" class="fc__nodeDot @(NodeKindClass(n.Type))" filter="url(#fcShadow)" />
-                <text class="fc__nodeLabel" x="0.6" y="0.1">@n.Id</text>
-            </g>
-        }
+            @foreach (var n in Scene.Nodes)
+            {
+                var subLabel = string.Equals(n.DisplayName, n.Id, StringComparison.OrdinalIgnoreCase) ? string.Empty : n.Id;
+                <g class="fc__node" transform="@Translate(n.X, n.Y)">
+                    <circle r="0.45" class="fc__nodeDot @(NodeKindClass(n.Type))" filter="url(#fcShadow)" />
+                    <text class="fc__nodeLabel" x="0.6" y="0.1">@n.DisplayName</text>
+                    <text class="fc__nodeSubLabel @(string.IsNullOrWhiteSpace(subLabel) ? "fc__nodeSubLabel--hidden" : string.Empty)" x="0.6" y="0.46">@subLabel</text>
+                </g>
+            }
 
-        @foreach (var m in Scene.Machines)
-        {
-            <circle cx="@m.X" cy="@m.Y" r="0.62" class="fc__machineRing @(MachineStatusClass(m.Status))" />
-        }
+            @foreach (var m in Scene.Machines)
+            {
+                <circle cx="@Svg(m.X)" cy="@Svg(m.Y)" r="0.62" class="fc__machineRing @(MachineStatusClass(m.Status))" />
+            }
 
-        @foreach (var t in Scene.Transports)
-        {
-            <g class="fc__transport" transform="@($"translate({t.X},{t.Y})")">
-                <circle r="0.22" class="fc__transportDot @(TransportStatusClass(t.Status))" filter="url(#fcShadow)" />
-                <text class="fc__transportLabel" x="0.28" y="-0.28">@t.Id</text>
-            </g>
-        }
-    </svg>
+            @foreach (var t in Scene.Transports)
+            {
+                <g class="fc__transport" transform="@Translate(t.X, t.Y)">
+                    <circle r="0.22" class="fc__transportDot @(TransportStatusClass(t.Status))" filter="url(#fcShadow)" />
+                    <text class="fc__transportLabel" x="0.28" y="-0.28">@t.Id</text>
+                </g>
+            }
+        </svg>
+    </div>
 }
 
 @code {
     [Parameter] public FactoryCanvasViewModel.Scene? Scene { get; set; }
+    [Parameter] public double Zoom { get; set; } = 1d;
+
+    private string ViewportStyle => string.Create(
+        CultureInfo.InvariantCulture,
+        $"transform: scale({Math.Clamp(Zoom, 0.6d, 2.4d)});");
+
+    private static string Svg(double value) => value.ToString(CultureInfo.InvariantCulture);
+
+    private static string ViewBox(FactoryCanvasViewModel.Scene scene) => string.Create(
+        CultureInfo.InvariantCulture,
+        $"{scene.MinX} {scene.MinY} {scene.Width} {scene.Height}");
+
+    private static string Translate(double x, double y) => string.Create(
+        CultureInfo.InvariantCulture,
+        $"translate({x},{y})");
 
     private static string NodeKindClass(string type)
     {
@@ -72,4 +92,3 @@ else
         _ => "fc__transportDot--idle"
     };
 }
-

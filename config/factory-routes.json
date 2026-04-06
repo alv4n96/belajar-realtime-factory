@@ -7,29 +7,22 @@
       "distance": 2
     },
     {
-      "from": { "locationId": "WH_IN", "portId": "OUT" },
+      "from": { "locationId": "CS_1", "portId": "IN" },
       "to": { "locationId": "ROLL_PRESS_1", "portId": "IN" },
       "isBidirectional": true,
       "distance": 2
     },
     {
       "from": { "locationId": "ROLL_PRESS_1", "portId": "OUT" },
-      "to": { "locationId": "WH_OUT", "portId": "IN" },
-      "isBidirectional": true,
-      "distance": 4
-    },
-    {
-      "from": { "locationId": "WH_OUT", "portId": "IN" },
       "to": { "locationId": "CS_2", "portId": "IN" },
       "isBidirectional": true,
       "distance": 2
     },
     {
       "from": { "locationId": "CS_2", "portId": "IN" },
-      "to": { "locationId": "CS_1", "portId": "IN" },
+      "to": { "locationId": "WH_OUT", "portId": "IN" },
       "isBidirectional": true,
-      "distance": 4
+      "distance": 2
     }
   ]
 }
-

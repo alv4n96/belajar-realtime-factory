@@ -1,13 +1,10 @@
-using EQFR.Biz.Dispatching;
-using EQFR.Biz.Machines;
-using EQFR.Biz.Routing;
-using EQFR.Biz.Runtime;
-using EQFR.Biz.Simulation;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using EQFR.Biz.Snapshots;
-using EQFR.Biz.Transport;
-using EQFR.IO.Config;
 using EQFR.UI.Realtime;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 
 namespace EQFR.UI.Services;
 
@@ -15,101 +12,69 @@ public sealed class SimulationBackgroundService(
     ILogger<SimulationBackgroundService> logger,
     IHubContext<FactoryHub> hubContext,
     FactorySnapshotStore snapshotStore,
-    SimulationControlService controls) : BackgroundService
+    IHttpClientFactory httpClientFactory,
+    IOptions<MockBackendOptions> options) : BackgroundService
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("EQFR simulation background service started.");
+        var settings = options.Value;
+        var client = httpClientFactory.CreateClient("MockBackend");
+        client.BaseAddress = new Uri(settings.BaseUrl, UriKind.Absolute);
 
-        var configDir = FindConfigDirectory(AppContext.BaseDirectory);
-        if (configDir is null)
-        {
-            logger.LogError("Config directory not found. Expected a 'config' folder in app directory or parent directories.");
-            return;
-        }
-
-        var loader = new JsonConfigLoader();
-        var bundleResult = loader.LoadFromDirectory(configDir);
-        if (!bundleResult.IsSuccess || bundleResult.Value is null)
-        {
-            logger.LogError("Failed to load config from '{ConfigDir}': {Error}", configDir, bundleResult.Error?.Message);
-            return;
-        }
-
-        var bundle = bundleResult.Value;
-        var (state, orchestrator, reservations) = BuildRuntime(bundle);
+        logger.LogInformation("EQFR UI backend polling service started. Backend: {BaseUrl}", client.BaseAddress);
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            var now = DateTimeOffset.UtcNow;
-
-            if (controls.ConsumeResetRequested())
+            try
             {
-                (state, orchestrator, reservations) = BuildRuntime(bundle);
-            }
+                using var response = await client.GetAsync("/api/snapshot", stoppingToken);
+                if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(Math.Max(100, settings.PollIntervalMs)), stoppingToken);
+                    continue;
+                }
 
-            var desired = controls.DesiredStatus;
-            if (state.SimulationStatus != desired)
+                response.EnsureSuccessStatusCode();
+
+                var payload = await response.Content.ReadFromJsonAsync<SnapshotEnvelope>(JsonOptions, stoppingToken);
+                if (payload?.Snapshot is not null)
+                {
+                    snapshotStore.Update(payload.Snapshot);
+                    await hubContext.Clients.All.SendAsync("factorySnapshot", payload.Snapshot, cancellationToken: stoppingToken);
+
+                    var nextDelayMs = payload.Snapshot.TickOptions.TickInterval.TotalMilliseconds;
+                    var delay = TimeSpan.FromMilliseconds(Math.Max(100, nextDelayMs > 0 ? nextDelayMs : settings.PollIntervalMs));
+                    await Task.Delay(delay, stoppingToken);
+                    continue;
+                }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                state = state with { SimulationStatus = desired };
+                break;
             }
-
-            if (state.SimulationStatus == EQFR.Common.SimulationStatus.Running)
+            catch (Exception ex)
             {
-                orchestrator.Tick(state, now);
+                logger.LogWarning(ex, "Failed to poll backend snapshot from {BaseUrl}", client.BaseAddress);
             }
-
-            var snapshot = SnapshotBuilder.Build(state, now);
-            snapshotStore.Update(snapshot);
-            await hubContext.Clients.All.SendAsync("factorySnapshot", snapshot, cancellationToken: stoppingToken);
 
             try
             {
-                var delay = state.SimulationStatus == EQFR.Common.SimulationStatus.Running
-                    ? state.TickOptions.TickInterval
-                    : TimeSpan.FromMilliseconds(Math.Max(250, state.TickOptions.TickInterval.TotalMilliseconds));
-
-                await Task.Delay(delay, stoppingToken);
+                await Task.Delay(TimeSpan.FromMilliseconds(Math.Max(250, settings.PollIntervalMs)), stoppingToken);
             }
             catch (OperationCanceledException)
             {
-                // ignore
+                break;
             }
         }
 
-        logger.LogInformation("EQFR simulation background service stopped.");
+        logger.LogInformation("EQFR UI backend polling service stopped.");
     }
 
-    private static string? FindConfigDirectory(string baseDirectory)
-    {
-        var dir = new DirectoryInfo(baseDirectory);
-
-        for (var i = 0; i < 8 && dir is not null; i++)
-        {
-            var candidate = Path.Combine(dir.FullName, "config");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-
-            dir = dir.Parent;
-        }
-
-        return null;
-    }
-
-    private static (FactoryState State, SimulationOrchestrator Orchestrator, ReservationManager Reservations) BuildRuntime(ConfigBundle bundle)
-    {
-        var state = FactoryStateBuilder.BuildInitialState(bundle);
-
-        var reservations = new ReservationManager();
-        var transportEngine = new TransportEngine(reservations);
-        var machineEngine = new RollPressMachineEngine(bundle.Process);
-        var dispatcher = new Dispatcher();
-        var orchestrator = new SimulationOrchestrator(machineEngine, dispatcher, transportEngine);
-
-        state = state with { SimulationStatus = EQFR.Common.SimulationStatus.Stopped };
-        return (state, orchestrator, reservations);
-    }
+    private sealed record SnapshotEnvelope(DateTimeOffset? LastUpdatedUtc, FactorySnapshot? Snapshot);
 }
-

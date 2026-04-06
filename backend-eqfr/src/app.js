@@ -20,7 +20,7 @@ function createApp({ configLoader, snapshotStore, controlStore }) {
   app.use(express.json({ limit: "1mb" }));
 
   app.use(createHealthRouter());
-  app.use("/api/config", createConfigRouter({ configLoader }));
+  app.use("/api/config", createConfigRouter({ configLoader, controlStore }));
   app.use("/api/snapshot", createSnapshotRouter({ snapshotStore }));
   app.use("/api/controls", createControlsRouter({ controlStore }));
 
@@ -40,4 +40,3 @@ function createApp({ configLoader, snapshotStore, controlStore }) {
 }
 
 module.exports = { createApp };
-

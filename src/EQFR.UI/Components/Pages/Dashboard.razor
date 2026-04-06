@@ -7,10 +7,29 @@
 
 <PageTitle>Dashboard</PageTitle>
 
-<div class="dash">
-    <header class="dash__header">
-        <div class="dash__title">
-            <h1>EQFR Dashboard</h1>
+<div class="@(CanvasOnly ? "dash dash--canvasOnly" : "dash")">
+    <section class="dash__canvas">
+        <div class="dash__canvasToolbar glass">
+            <button type="button" class="dash__zoomButton" @onclick="ZoomOut" aria-label="Zoom out">-</button>
+            <div class="dash__zoomValue">@($"{(ZoomLevel * 100):0}%")</div>
+            <button type="button" class="dash__zoomButton" @onclick="ZoomIn" aria-label="Zoom in">+</button>
+            <button type="button" class="dash__zoomReset" @onclick="ResetZoom">Reset</button>
+            <button type="button" class="dash__zoomReset" @onclick="ToggleCanvasOnly">@(CanvasOnly ? "Show Panels" : "Canvas Only")</button>
+        </div>
+        <FactoryCanvas Scene="@(FactoryCanvasViewModel.Build(Vm.Snapshot))" Zoom="@ZoomLevel" />
+    </section>
+
+    <header class="dash__hero glass floatingCard @(HeroMinimized ? "floatingCard--min" : string.Empty)">
+        <div class="floatingCard__head">
+            <div>
+                <div class="dash__eyebrow">Realtime Factory</div>
+                <h1>EQFR Live Monitor</h1>
+            </div>
+            <button type="button" class="floatingCard__toggle" @onclick="(() => HeroMinimized = !HeroMinimized)">@(HeroMinimized ? "+" : "-")</button>
+        </div>
+
+        @if (!HeroMinimized)
+        {
             <div class="dash__subtitle">
                 @if (Vm.LastUpdated is null)
                 {
@@ -21,60 +40,77 @@
                     <span>Last update (UTC): @Vm.LastUpdated</span>
                 }
             </div>
-        </div>
-        <div class="dash__controls">
-            <button class="btn @(Vm.CanStart ? "" : "btn--disabled")" disabled="@(!Vm.CanStart)" @onclick="Vm.StartAsync">Start</button>
-            <button class="btn @(Vm.CanPause ? "" : "btn--disabled")" disabled="@(!Vm.CanPause)" @onclick="Vm.PauseAsync">Pause</button>
-            <button class="btn @(Vm.CanReset ? "" : "btn--disabled")" disabled="@(!Vm.CanReset)" @onclick="Vm.ResetAsync">Reset</button>
-        </div>
+            <div class="dash__status">
+                <span class="badge badge--live">Auto Run</span>
+                <span class="badge">@Vm.SimulationStatus</span>
+            </div>
+        }
     </header>
 
-    <main class="dash__grid">
-        <section class="panel panel--canvas">
-            <div class="panel__head">
-                <h2>Factory Canvas</h2>
-                <div class="panel__meta">Realtime</div>
-            </div>
-            <div class="panel__body canvas">
-                <FactoryCanvas Scene="@(FactoryCanvasViewModel.Build(Vm.Snapshot))" />
-            </div>
-        </section>
+    <section class="dash__summary glass floatingCard @(SummaryMinimized ? "floatingCard--min" : string.Empty)">
+        <div class="floatingCard__head">
+            <h2 class="floatingCard__title">Summary</h2>
+            <button type="button" class="floatingCard__toggle" @onclick="(() => SummaryMinimized = !SummaryMinimized)">@(SummaryMinimized ? "+" : "-")</button>
+        </div>
 
-        <section class="panel">
-            <div class="panel__head">
-                <h2>Machine</h2>
-                <div class="panel__meta">@((Vm.Snapshot?.Machines.Count ?? 0).ToString())</div>
+        @if (!SummaryMinimized)
+        {
+            <div class="kpi">
+                <div class="kpi__label">Machines</div>
+                <div class="kpi__value">@((Vm.Snapshot?.Machines.Count ?? 0).ToString("00"))</div>
             </div>
-            <div class="panel__body">
-                <MachinePanel Items="@(MachinePanelViewModel.Build(Vm.Snapshot))" />
+            <div class="kpi">
+                <div class="kpi__label">Transport</div>
+                <div class="kpi__value">@((Vm.Snapshot?.Transports.Count ?? 0).ToString("00"))</div>
             </div>
-        </section>
+            <div class="kpi">
+                <div class="kpi__label">Events</div>
+                <div class="kpi__value">@((Vm.Snapshot?.RecentEvents.Count ?? 0).ToString("00"))</div>
+            </div>
+        }
+    </section>
 
-        <section class="panel">
+    <aside class="dash__side floatingCard @(SideMinimized ? "floatingCard--min" : string.Empty)">
+        <div class="panel glass">
             <div class="panel__head">
-                <h2>Transport</h2>
-                <div class="panel__meta">@((Vm.Snapshot?.Transports.Count ?? 0).ToString())</div>
+                <h2>Machine & Transport</h2>
+                <button type="button" class="floatingCard__toggle" @onclick="(() => SideMinimized = !SideMinimized)">@(SideMinimized ? "+" : "-")</button>
             </div>
-            <div class="panel__body">
-                <TransportPanel Items="@(TransportPanelViewModel.Build(Vm.Snapshot))" />
-            </div>
-        </section>
 
-        <section class="panel panel--events">
-            <div class="panel__head">
-                <h2>Event Log</h2>
-                <div class="panel__meta">@((Vm.Snapshot?.RecentEvents.Count ?? 0).ToString())</div>
-            </div>
-            <div class="panel__body events">
-                <EventLogPanel Items="@(EventLogPanelViewModel.Build(Vm.Snapshot, take: 30))" />
-            </div>
-        </section>
+            @if (!SideMinimized)
+            {
+                <div class="dash__sideBody">
+                    <section class="panel panel--inner glass">
+                        <div class="panel__head">
+                            <h2>Machine</h2>
+                            <div class="panel__meta">@((Vm.Snapshot?.Machines.Count ?? 0).ToString())</div>
+                        </div>
+                        <div class="panel__body">
+                            <MachinePanel Items="@(MachinePanelViewModel.Build(Vm.Snapshot))" />
+                        </div>
+                    </section>
 
-        <section class="panel panel--legend">
-            <div class="panel__head">
-                <h2>Legend</h2>
-                <div class="panel__meta">Status</div>
-            </div>
+                    <section class="panel panel--inner glass">
+                        <div class="panel__head">
+                            <h2>Transport</h2>
+                            <div class="panel__meta">@((Vm.Snapshot?.Transports.Count ?? 0).ToString())</div>
+                        </div>
+                        <div class="panel__body">
+                            <TransportPanel Items="@(TransportPanelViewModel.Build(Vm.Snapshot))" />
+                        </div>
+                    </section>
+                </div>
+            }
+        </div>
+    </aside>
+
+    <section class="panel panel--events glass floatingCard @(LegendMinimized ? "floatingCard--min" : string.Empty)">
+        <div class="panel__head">
+            <h2>Legend</h2>
+            <button type="button" class="floatingCard__toggle" @onclick="(() => LegendMinimized = !LegendMinimized)">@(LegendMinimized ? "+" : "-")</button>
+        </div>
+        @if (!LegendMinimized)
+        {
             <div class="panel__body legend">
                 <div class="legend__item"><span class="dot dot--idle"></span> idle</div>
                 <div class="legend__item"><span class="dot dot--moving"></span> moving</div>
@@ -84,11 +120,39 @@
                 <div class="legend__sep"></div>
                 <div class="legend__item"><span class="dot dot--ready"></span> output ready</div>
             </div>
-        </section>
-    </main>
+        }
+    </section>
+
+    <section class="panel panel--log glass floatingCard @(LogMinimized ? "floatingCard--min" : string.Empty)">
+        <div class="panel__head">
+            <h2>Event Log</h2>
+            <button type="button" class="floatingCard__toggle" @onclick="(() => LogMinimized = !LogMinimized)">@(LogMinimized ? "+" : "-")</button>
+        </div>
+        @if (!LogMinimized)
+        {
+            <div class="panel__body events">
+                <EventLogPanel Items="@(EventLogPanelViewModel.Build(Vm.Snapshot, take: 30))" />
+            </div>
+        }
+    </section>
+
+    <ConfigEditorPanel Minimized="@ConfigMinimized" OnToggleMinimized="ToggleConfigMinimized" />
 </div>
 
 @code {
+    private const double MinZoom = 0.7d;
+    private const double MaxZoom = 2.2d;
+    private const double ZoomStep = 0.15d;
+
+    private double ZoomLevel { get; set; } = 1d;
+    private bool CanvasOnly { get; set; }
+    private bool HeroMinimized { get; set; }
+    private bool SummaryMinimized { get; set; }
+    private bool SideMinimized { get; set; }
+    private bool LegendMinimized { get; set; }
+    private bool LogMinimized { get; set; }
+    private bool ConfigMinimized { get; set; }
+
     protected override void OnInitialized()
     {
         Vm.Changed += OnChanged;
@@ -101,5 +165,18 @@
     }
 
     private void OnChanged() => InvokeAsync(StateHasChanged);
-}
 
+    private void ZoomIn() => ZoomLevel = Math.Min(MaxZoom, ZoomLevel + ZoomStep);
+
+    private void ZoomOut() => ZoomLevel = Math.Max(MinZoom, ZoomLevel - ZoomStep);
+
+    private void ResetZoom() => ZoomLevel = 1d;
+
+    private void ToggleCanvasOnly() => CanvasOnly = !CanvasOnly;
+
+    private Task ToggleConfigMinimized()
+    {
+        ConfigMinimized = !ConfigMinimized;
+        return Task.CompletedTask;
+    }
+}

@@ -1,73 +1,73 @@
 # EQFR (EQ Factory Realtime) - MVP Realtime Factory
 
-Repo ini adalah MVP simulasi factory realtime berbasis in-memory dan config JSON.
+Repo ini adalah MVP realtime factory untuk demo/testing dengan backend mock in-memory dan UI dashboard realtime.
 
 ## Struktur Solution
 
 - `EQFR.Common` (class library): shared types, enums, contracts.
 - `EQFR.EIFData` (class library): model/config data (layout, routes, process, transport, simulation).
 - `EQFR.IO` (class library): loader config JSON dari folder `config/`.
-- `EQFR.Biz` (class library): runtime state, routing, dispatching, machine + transport engines, snapshot builder.
+- `EQFR.Biz` (class library): kontrak snapshot dan logika domain yang dipakai UI.
 - `EQFR.UI` (host app): Blazor (Interactive Server) untuk menampilkan factory dashboard realtime.
+- `backend-eqfr` (Node/Express): mock backend tanpa database yang generate snapshot factory otomatis dari folder `config/`.
 
 ## Prinsip MVP
 
 - Tidak menggunakan database.
-- Semua runtime state wajib in-memory.
-- Semua config harus berasal dari file JSON di folder `config/`.
+- Semua runtime state in-memory.
+- Semua config berasal dari file JSON di folder `config/`.
+- Backend mock adalah source data untuk UI.
 
 ## Menjalankan Aplikasi
 
 Prasyarat:
-- .NET SDK (repo ini menggunakan target `net10.0`, sehingga idealnya pakai SDK yang sesuai).
+- .NET SDK (`net10.0`)
+- Node.js
 
-Perintah:
+1. Jalankan backend mock:
 
 ```powershell
-dotnet run --project .\src\EQFR.UI
+cd .\backend-eqfr
+npm.cmd start
 ```
 
-Lalu buka:
-- `https://localhost:<port>/dashboard`
+Default backend listen di `http://localhost:3001`.
 
-Catatan:
-- Service simulasi mencari folder `config/` mulai dari `AppContext.BaseDirectory` lalu naik beberapa parent folder.
-- Status awal simulasi adalah `Stopped`. Tekan `Start` untuk mulai tick engine.
+2. Jalankan UI:
 
-## Verifikasi Flow End-to-End (MVP)
+```powershell
+cd ..\src\EQFR.UI
+dotnet run
+```
 
-Dengan config default, flow yang diharapkan:
-- `LOT_001` tersedia di `WH_IN:OUT`
-- Machine `ROLL_PRESS_1` akan request input
-- Dispatcher membuat task: deliver input `WH_IN:OUT -> ROLL_PRESS_1:IN`
-- Machine memproses step `Load -> Press -> Unload`
-- Output ready, lalu dispatcher membuat task: move output `ROLL_PRESS_1:OUT -> WH_OUT:IN`
+3. Buka dashboard:
+- `http://localhost:5042/dashboard`
+- jika port default UI sedang dipakai, aplikasi otomatis pindah ke port berikutnya (`5043`, `5044`, dst.)
 
-Yang harus terlihat di Dashboard:
-- Canvas/layout menampilkan lokasi, edge, dan posisi transport bergerak per tick.
-- Panel `Machine` menampilkan status, lot id, step, flags.
-- Panel `Transport` menampilkan node saat ini, task id, dan lot yang dibawa.
-- `Event Log` menampilkan rangkaian event (dispatch, pickup/dropoff, machine step).
-- Tombol:
-  - `Start`: menjalankan simulasi.
-  - `Pause`: menghentikan tick (state tidak berubah, tapi UI tetap update snapshot).
-  - `Reset`: rebuild runtime state dari config (kembali ke kondisi awal).
+## Flow Saat Ini
 
-## Konfigurasi
+- Backend membaca `config/` saat startup.
+- Backend generate snapshot factory secara otomatis tanpa database.
+- UI polling `http://localhost:3001/api/snapshot` lalu menampilkan hasilnya di dashboard realtime.
+- Dashboard berjalan otomatis tanpa tombol start/pause/reset.
 
-Folder: `config/`
+## Endpoint Backend Mock
 
-File utama:
-- `factory-layout.json`: lokasi, posisi, dan port.
-- `factory-routes.json`: edge/route yang boleh dilewati transport.
-- `factory-transport.json`: daftar transport dan start node.
-- `factory-process.json`: machine process steps (MVP: Roll Press).
-- `factory-simulation.json`: tick interval, max event, initial lots.
+- `GET /health`
+- `GET /api/config`
+- `GET /api/snapshot`
+- `GET /api/controls`
+- `POST /api/controls/start`
+- `POST /api/controls/pause`
+- `POST /api/controls/stop`
+- `POST /api/controls/reset`
+- `POST /api/controls/consume-reset`
 
 ## Troubleshooting Cepat
 
-- Transport tidak bergerak:
-  - Pastikan `factory-routes.json` membentuk graph yang terhubung dari start node transport ke pickup/dropoff node.
-- UI tidak update:
-  - Pastikan `dotnet run --project .\src\EQFR.UI` sukses tanpa error dan akses `/dashboard`.
-
+- Dashboard kosong atau `Menunggu snapshot realtime...`
+  - pastikan backend `npm.cmd start` berjalan di `http://localhost:3001`
+- `address already in use` saat menjalankan UI
+  - instance kedua UI akan fallback ke port lokal berikutnya; lihat URL di console
+- Backend gagal start
+  - pastikan folder `config/` ada di root repo dan file JSON valid
