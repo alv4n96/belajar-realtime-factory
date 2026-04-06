@@ -1,0 +1,35 @@
+{
+  "edges": [
+    {
+      "from": { "locationId": "CS_1", "portId": "OUT" },
+      "to": { "locationId": "WH_IN", "portId": "OUT" },
+      "isBidirectional": true,
+      "distance": 2
+    },
+    {
+      "from": { "locationId": "WH_IN", "portId": "OUT" },
+      "to": { "locationId": "ROLL_PRESS_1", "portId": "IN" },
+      "isBidirectional": true,
+      "distance": 2
+    },
+    {
+      "from": { "locationId": "ROLL_PRESS_1", "portId": "OUT" },
+      "to": { "locationId": "WH_OUT", "portId": "IN" },
+      "isBidirectional": true,
+      "distance": 4
+    },
+    {
+      "from": { "locationId": "WH_OUT", "portId": "IN" },
+      "to": { "locationId": "CS_2", "portId": "IN" },
+      "isBidirectional": true,
+      "distance": 2
+    },
+    {
+      "from": { "locationId": "CS_2", "portId": "OUT" },
+      "to": { "locationId": "CS_1", "portId": "IN" },
+      "isBidirectional": true,
+      "distance": 4
+    }
+  ]
+}
+

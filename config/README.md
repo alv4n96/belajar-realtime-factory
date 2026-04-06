@@ -7,6 +7,7 @@ Planned config files (names may evolve):
 - `factory-routes.json`
 - `factory-process.json`
 - `factory-simulation.json`
+- `factory-transport.json`
 
 Notes:
 - The first MVP is config-driven and runs fully in memory.

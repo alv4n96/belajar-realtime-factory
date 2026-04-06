@@ -1,0 +1,13 @@
+{
+  "tickIntervalMs": 250,
+  "maxRecentEvents": 200,
+  "initialLots": [
+    {
+      "lotId": "LOT_001",
+      "materialType": "RAW",
+      "locationId": "WH_IN",
+      "portId": "OUT"
+    }
+  ]
+}
+

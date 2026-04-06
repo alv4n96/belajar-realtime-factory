@@ -1,0 +1,15 @@
+{
+  "machines": [
+    {
+      "id": "ROLL_PRESS_1",
+      "inputPortId": "IN",
+      "outputPortId": "OUT",
+      "steps": [
+        { "name": "Load", "durationMs": 1500 },
+        { "name": "Press", "durationMs": 5000 },
+        { "name": "Unload", "durationMs": 1500 }
+      ]
+    }
+  ]
+}
+
