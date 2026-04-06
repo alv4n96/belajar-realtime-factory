@@ -1,7 +1,7 @@
 {
   "edges": [
     {
-      "from": { "locationId": "CS_1", "portId": "OUT" },
+      "from": { "locationId": "CS_1", "portId": "IN" },
       "to": { "locationId": "WH_IN", "portId": "OUT" },
       "isBidirectional": true,
       "distance": 2
@@ -25,7 +25,7 @@
       "distance": 2
     },
     {
-      "from": { "locationId": "CS_2", "portId": "OUT" },
+      "from": { "locationId": "CS_2", "portId": "IN" },
       "to": { "locationId": "CS_1", "portId": "IN" },
       "isBidirectional": true,
       "distance": 4
