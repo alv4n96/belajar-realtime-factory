@@ -1,0 +1,126 @@
+@page "/dashboard"
+@using EQFR.UI.ViewModels
+@inject DashboardViewModel Vm
+@implements IDisposable
+
+<PageTitle>Dashboard</PageTitle>
+
+<div class="dash">
+    <header class="dash__header">
+        <div class="dash__title">
+            <h1>EQFR Dashboard</h1>
+            <div class="dash__subtitle">
+                @if (Vm.LastUpdated is null)
+                {
+                    <span>Menunggu snapshot realtime...</span>
+                }
+                else
+                {
+                    <span>Last update (UTC): @Vm.LastUpdated</span>
+                }
+            </div>
+        </div>
+        <div class="dash__controls">
+            <button class="btn" disabled>Start</button>
+            <button class="btn" disabled>Pause</button>
+            <button class="btn" disabled>Reset</button>
+        </div>
+    </header>
+
+    <main class="dash__grid">
+        <section class="panel panel--canvas">
+            <div class="panel__head">
+                <h2>Factory Canvas</h2>
+                <div class="panel__meta">Placeholder</div>
+            </div>
+            <div class="panel__body canvas">
+                <div class="canvas__hint">
+                    Canvas akan diisi di issue berikutnya (nodes, routes, transport, machine).
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel__head">
+                <h2>Machine</h2>
+                <div class="panel__meta">Placeholder</div>
+            </div>
+            <div class="panel__body">
+                <div class="kpi">
+                    <div class="kpi__label">Count</div>
+                    <div class="kpi__value">@((Vm.Snapshot?.Machines.Count ?? 0).ToString())</div>
+                </div>
+                <div class="muted">Detail machine panel akan ditambahkan nanti.</div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel__head">
+                <h2>Transport</h2>
+                <div class="panel__meta">Placeholder</div>
+            </div>
+            <div class="panel__body">
+                <div class="kpi">
+                    <div class="kpi__label">Count</div>
+                    <div class="kpi__value">@((Vm.Snapshot?.Transports.Count ?? 0).ToString())</div>
+                </div>
+                <div class="muted">Detail transport panel akan ditambahkan nanti.</div>
+            </div>
+        </section>
+
+        <section class="panel panel--events">
+            <div class="panel__head">
+                <h2>Event Log</h2>
+                <div class="panel__meta">Placeholder</div>
+            </div>
+            <div class="panel__body events">
+                @if (Vm.Snapshot is null || Vm.Snapshot.RecentEvents.Count == 0)
+                {
+                    <div class="muted">Belum ada event.</div>
+                }
+                else
+                {
+                    <ul class="events__list">
+                        @foreach (var e in Vm.Snapshot.RecentEvents.Take(10))
+                        {
+                            <li class="events__item">
+                                <span class="events__time">@e.Timestamp.ToString("HH:mm:ss")</span>
+                                <span class="events__msg">@e.Message</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </section>
+
+        <section class="panel panel--legend">
+            <div class="panel__head">
+                <h2>Legend</h2>
+                <div class="panel__meta">Placeholder</div>
+            </div>
+            <div class="panel__body legend">
+                <div class="legend__item"><span class="dot dot--idle"></span> idle</div>
+                <div class="legend__item"><span class="dot dot--moving"></span> moving</div>
+                <div class="legend__item"><span class="dot dot--waiting"></span> waiting</div>
+                <div class="legend__item"><span class="dot dot--processing"></span> processing</div>
+                <div class="legend__item"><span class="dot dot--error"></span> error</div>
+            </div>
+        </section>
+    </main>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Vm.Changed += OnChanged;
+    }
+
+    public void Dispose()
+    {
+        Vm.Changed -= OnChanged;
+        Vm.Dispose();
+    }
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+}
+
