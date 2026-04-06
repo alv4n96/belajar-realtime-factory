@@ -5,13 +5,13 @@ namespace EQFR.Biz.Runtime;
 public sealed record FactoryState(
     SimulationStatus SimulationStatus,
     TickOptions TickOptions,
-    IReadOnlyDictionary<string, LocationNode> Locations,
-    IReadOnlyList<RouteEdge> RouteEdges,
-    IReadOnlyDictionary<string, TransportUnit> Transports,
-    IReadOnlyDictionary<string, MachineUnit> Machines,
-    IReadOnlyDictionary<string, Lot> Lots,
-    IReadOnlyDictionary<string, TransportTask> Tasks,
-    IReadOnlyDictionary<string, RouteReservation> Reservations,
-    IReadOnlyList<EventLogItem> RecentEvents
+    Dictionary<string, LocationNode> Locations,
+    List<RouteEdge> RouteEdges,
+    Dictionary<string, TransportUnit> Transports,
+    Dictionary<string, MachineUnit> Machines,
+    Dictionary<string, Lot> Lots,
+    Dictionary<string, TransportTask> Tasks,
+    Dictionary<string, RouteReservation> Reservations,
+    List<EventLogItem> RecentEvents
 );
 

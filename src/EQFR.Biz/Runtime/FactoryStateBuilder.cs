@@ -35,7 +35,7 @@ public static class FactoryStateBuilder
         );
     }
 
-    private static IReadOnlyDictionary<string, LocationNode> BuildLocations(FactoryLayoutConfig layout)
+    private static Dictionary<string, LocationNode> BuildLocations(FactoryLayoutConfig layout)
     {
         var dict = new Dictionary<string, LocationNode>(StringComparer.OrdinalIgnoreCase);
 
@@ -59,7 +59,7 @@ public static class FactoryStateBuilder
         return dict;
     }
 
-    private static IReadOnlyList<RouteEdge> BuildEdges(FactoryRoutesConfig routes)
+    private static List<RouteEdge> BuildEdges(FactoryRoutesConfig routes)
     {
         var edges = new List<RouteEdge>();
 
@@ -78,7 +78,7 @@ public static class FactoryStateBuilder
         return edges;
     }
 
-    private static IReadOnlyDictionary<string, MachineUnit> BuildMachines(EQFR.EIFData.Process.FactoryProcessConfig process)
+    private static Dictionary<string, MachineUnit> BuildMachines(EQFR.EIFData.Process.FactoryProcessConfig process)
     {
         var machines = new Dictionary<string, MachineUnit>(StringComparer.OrdinalIgnoreCase);
 
@@ -102,16 +102,18 @@ public static class FactoryStateBuilder
         return machines;
     }
 
-    private static IReadOnlyDictionary<string, TransportUnit> BuildTransports(EQFR.EIFData.Transport.FactoryTransportConfig transport)
+    private static Dictionary<string, TransportUnit> BuildTransports(EQFR.EIFData.Transport.FactoryTransportConfig transport)
     {
         var transports = new Dictionary<string, TransportUnit>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var t in transport.Transports.OrderBy(t => t.Id, StringComparer.OrdinalIgnoreCase))
         {
+            var home = new NodeRef(t.Start.LocationId, t.Start.PortId);
             transports[t.Id] = new TransportUnit(
                 Id: t.Id,
                 Status: TransportStatus.Idle,
-                CurrentNode: new NodeRef(t.Start.LocationId, t.Start.PortId),
+                CurrentNode: home,
+                HomeNode: home,
                 CurrentTaskId: null,
                 CurrentLotId: null
             );
@@ -120,9 +122,9 @@ public static class FactoryStateBuilder
         return transports;
     }
 
-    private static IReadOnlyDictionary<string, Lot> BuildLots(
+    private static Dictionary<string, Lot> BuildLots(
         EQFR.EIFData.Simulation.FactorySimulationConfig simulation,
-        IReadOnlyDictionary<string, LocationNode> locations)
+        Dictionary<string, LocationNode> locations)
     {
         var lots = new Dictionary<string, Lot>(StringComparer.OrdinalIgnoreCase);
 
