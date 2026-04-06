@@ -1,6 +1,6 @@
 namespace EQFR.Biz.Runtime;
 
-public enum TaskStatus
+public enum TransportTaskStatus
 {
     Pending = 0,
     InProgress = 1,
